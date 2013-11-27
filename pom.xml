@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.iat.compassmassive</groupId>
+        <artifactId>compass-massive-pom</artifactId>
+        <version>1.16.2</version>
+        <relativePath>../compass-massive-pom</relativePath>
+    </parent>
+
+    <!-- include groupId here as Sonar doesn't look at parent for location -->
+    <groupId>com.iat.compassmassive</groupId>
+    <artifactId>guava-retrying</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <packaging>jar</packaging>
+
+    <name>guava-retrying</name>
+
+    <scm>
+        <url>https://github.com/IAT/${project.artifactId}</url>
+        <connection>scm:git:git@github.com:IAT/${project.artifactId}.git</connection>
+        <developerConnection>scm:git:git@github.com:IAT/${project.artifactId}.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <properties>
+        <metrics.version>3.0.1</metrics.version>
+        <junit.version>4.11</junit.version>
+        <mockito-version>1.9.5</mockito-version>
+        <google.guava.version>14.0.1</google.guava.version>
+        <jsr305.version>2.0.1</jsr305.version>
+    </properties>
+
+
+    <dependencies>
+        <!-- Testing -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Mocking -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito-version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Google -->
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>${jsr305.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${google.guava.version}</version>
+        </dependency>
+
+        <!-- Metrics -->
+        <dependency>
+            <groupId>com.codahale.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>${metrics.version}</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

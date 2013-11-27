@@ -16,6 +16,8 @@
 
 package com.github.rholder.retry;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -24,22 +26,31 @@ import javax.annotation.Nonnull;
 
 /**
  * A builder used to configure and create a {@link Retryer}.
- * @author JB
- * @author Jason Dunkelberger (dirkraft)
  *
  * @param <V> the type of the retryer return value
+ * @author JB
+ * @author Jason Dunkelberger (dirkraft)
  */
 public class RetryerBuilder<V> {
+
+    private static final MetricRegistry DEFAULT_METRICS_REGISTRY = new MetricRegistry();
+    private static final Meter DEFAULT_RETRY_METER =
+            DEFAULT_METRICS_REGISTRY.meter(MetricRegistry.name(Retryer.class, "defaultGroup", "defaultRetries"));
+
     private AttemptTimeLimiter<V> attemptTimeLimiter;
     private StopStrategy stopStrategy;
     private WaitStrategy waitStrategy;
     private Predicate<Attempt<V>> rejectionPredicate = Predicates.alwaysFalse();
+
+    private MetricRegistry metricRegistry;
+    private Meter retryMeter;
 
     private RetryerBuilder() {
     }
 
     /**
      * Constructs a new builder
+     *
      * @return the new builder
      */
     public static <V> RetryerBuilder<V> newBuilder() {
@@ -49,6 +60,7 @@ public class RetryerBuilder<V> {
     /**
      * Sets the wait strategy used to decide how long to sleep between failed attempts.
      * The default strategy is to retry immediately after a failed attempt.
+     *
      * @param waitStrategy the strategy used to sleep between failed attempts
      * @return <code>this</code>
      * @throws IllegalStateException if a wait strategy has already been set.
@@ -63,6 +75,7 @@ public class RetryerBuilder<V> {
     /**
      * Sets the wait strategy used to decide . The default strategy
      * is to not sleep at all between attempts.
+     *
      * @param stopStrategy the strategy used to sleep between failed attempts
      * @return <code>this</code>
      * @throws IllegalStateException if a stop strategy has already been set.
@@ -76,6 +89,7 @@ public class RetryerBuilder<V> {
 
     /**
      * Configures the retryer to limit the duration of any particular attempt by the given duration.
+     *
      * @param attemptTimeLimiter to apply to each attempt
      * @return <code>this</code>
      */
@@ -88,6 +102,7 @@ public class RetryerBuilder<V> {
     /**
      * Configures the retryer to retry if an exception (i.e. any <code>Exception</code> or subclass
      * of <code>Exception</code>) is thrown by the call.
+     *
      * @return <code>this</code>
      */
     public RetryerBuilder<V> retryIfException() {
@@ -98,6 +113,7 @@ public class RetryerBuilder<V> {
     /**
      * Configures the retryer to retry if a runtime exception (i.e. any <code>RuntimeException</code> or subclass
      * of <code>RuntimeException</code>) is thrown by the call.
+     *
      * @return <code>this</code>
      */
     public RetryerBuilder<V> retryIfRuntimeException() {
@@ -108,6 +124,7 @@ public class RetryerBuilder<V> {
     /**
      * Configures the retryer to retry if an exception of the given class (or subclass of the given class) is
      * thrown by the call.
+     *
      * @param exceptionClass the type of the exception which should cause the retryer to retry
      * @return <code>this</code>
      */
@@ -120,6 +137,7 @@ public class RetryerBuilder<V> {
     /**
      * Configures the retryer to retry if an exception satisfying the given predicate is
      * thrown by the call.
+     *
      * @param exceptionPredicate the predicate which causes a retry if satisfied
      * @return <code>this</code>
      */
@@ -131,8 +149,9 @@ public class RetryerBuilder<V> {
 
     /**
      * Configures the retryer to retry if the result satisfies the given predicate.
+     *
      * @param resultPredicate a predicate applied to the result, and which causes the retryer
-     * to retry if the predicate is satisfied
+     *                        to retry if the predicate is satisfied
      * @return <code>this</code>
      */
     public RetryerBuilder<V> retryIfResult(@Nonnull Predicate<V> resultPredicate) {
@@ -141,16 +160,32 @@ public class RetryerBuilder<V> {
         return this;
     }
 
+    public RetryerBuilder<V> withMetricRegistry(MetricRegistry metricRegistry) {
+        this.metricRegistry = metricRegistry;
+        return this;
+    }
+
+    public RetryerBuilder<V> withMetricGroup(Class clazz, String group, String thingMeasured) {
+        if (metricRegistry == null) {
+            retryMeter = DEFAULT_METRICS_REGISTRY.meter(MetricRegistry.name(clazz, group, thingMeasured));
+        } else {
+            retryMeter = metricRegistry.meter(MetricRegistry.name(clazz, group, thingMeasured));
+        }
+        return this;
+    }
+
     /**
      * Builds the retryer.
+     *
      * @return the built retryer.
      */
     public Retryer<V> build() {
         AttemptTimeLimiter<V> theAttemptTimeLimiter = attemptTimeLimiter == null ? AttemptTimeLimiters.<V>noTimeLimit() : attemptTimeLimiter;
         StopStrategy theStopStrategy = stopStrategy == null ? StopStrategies.neverStop() : stopStrategy;
         WaitStrategy theWaitStrategy = waitStrategy == null ? WaitStrategies.noWait() : waitStrategy;
+        Meter theRetryMeter = retryMeter == null ? DEFAULT_RETRY_METER : retryMeter;
 
-        return new Retryer<V>(theAttemptTimeLimiter, theStopStrategy, theWaitStrategy, rejectionPredicate);
+        return new Retryer<V>(theAttemptTimeLimiter, theStopStrategy, theWaitStrategy, rejectionPredicate, theRetryMeter);
     }
 
     private static final class ExceptionClassPredicate<V> implements Predicate<Attempt<V>> {
